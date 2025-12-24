@@ -3,7 +3,7 @@
 schema_validate.py - Validate YAML files against JSON schemas
 """
 
-import os
+# import os
 import json
 import yaml
 import jsonschema

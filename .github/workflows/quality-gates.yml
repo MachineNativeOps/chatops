@@ -118,18 +118,18 @@ jobs:
           fi
 
           # Calculate weighted quality score (0-100)
-          QUALITY_SCORE=$(python3 - "$PYLINT_SCORE" "$TEST_COVERAGE" "$SECURITY_ISSUES" "$TS_SCORE" "$INTELLIGENT_SCORE" << 'PYCODE'
+          QUALITY_SCORE=$(python3 -c "
           import sys
 
           def to_float(value, default):
               try:
-                  if value is None or value == "":
+                  if value is None or value == '':
                       return float(default)
                   return float(value)
               except Exception:
                   return float(default)
 
-          pylint_raw, coverage_raw, security_raw, ts_raw, intelligent_raw = (sys.argv[1:6] + ["0", "0", "0", "0", "100"])[:5]
+          pylint_raw, coverage_raw, security_raw, ts_raw, intelligent_raw = (sys.argv[1:6] + ['0', '0', '0', '0', '100'])[:5]
 
           pylint = to_float(pylint_raw, 0) * 10  # pylint 0-10 -> 0-100
           coverage = to_float(coverage_raw, 0)  # 0-100
@@ -139,9 +139,8 @@ jobs:
 
           # Weighted average
           score = (pylint * 0.15) + (coverage * 0.25) + (security * 0.30) + (ts * 0.10) + (intelligent * 0.20)
-          print(f"{score:.1f}")
-          PYCODE
-          )
+          print(f'{score:.1f}')
+          " "$PYLINT_SCORE" "$TEST_COVERAGE" "$SECURITY_ISSUES" "$TS_SCORE" "$INTELLIGENT_SCORE")
 
           echo "score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
           echo "pylint-score=$PYLINT_SCORE" >> $GITHUB_OUTPUT
