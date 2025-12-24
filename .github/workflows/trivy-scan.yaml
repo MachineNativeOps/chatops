@@ -1,0 +1,383 @@
+name: Comprehensive Security Scan with Trivy
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Type of scan to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - filesystem
+        - repository
+        - config
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: write
+
+jobs:
+  filesystem-scan:
+    name: Filesystem Vulnerability Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'filesystem' || github.event.inputs.scan_type == '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner (filesystem)
+        uses: aquasecurity/trivy-action@0.16.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          exit-code: '1'
+          ignore-unfixed: false
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy filesystem scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: trivy-filesystem
+
+      - name: Upload Trivy filesystem scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-filesystem-scan
+          path: trivy-fs-results.sarif
+          retention-days: 30
+
+  repository-scan:
+    name: Repository Security Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'repository' || github.event.inputs.scan_type == '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy repository scan
+        uses: aquasecurity/trivy-action@0.16.1
+        with:
+          scan-type: 'repo'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-repo-results.sarif'
+          exit-code: '1'
+          ignore-unfixed: false
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy repository scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-repo-results.sarif'
+          category: trivy-repository
+
+      - name: Upload Trivy repository scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-repository-scan
+          path: trivy-repo-results.sarif
+          retention-days: 30
+
+  config-scan:
+    name: Configuration Security Scan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.scan_type == 'all' || github.event.inputs.scan_type == 'config' || github.event.inputs.scan_type == '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan YAML configurations
+        run: |
+          trivy config --format json --output trivy-config-json.json . || true
+          trivy config --format sarif --output trivy-config-results.sarif . || true
+
+      - name: Upload Trivy config scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-config-results.sarif'
+          category: trivy-config
+
+      - name: Upload Trivy config scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-config-scan
+          path: trivy-config-results.sarif
+          retention-days: 30
+
+  iac-scan:
+    name: Infrastructure as Code Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan Terraform files (if any)
+        run: |
+          if find . -name "*.tf" -o -name "*.tfvars" | grep -q .; then
+            echo "Found Terraform files, scanning with Trivy..."
+            trivy config --format json --output trivy-terraform-results.json .
+          else
+            echo "No Terraform files found"
+          fi
+
+      - name: Scan Kubernetes manifests
+        run: |
+          if find . -path "*/k8s/*" -o -path "*/kubernetes/*" -o -name "*.k8s.yaml" | grep -q .; then
+            echo "Found Kubernetes manifests, scanning..."
+            trivy config --format json --output trivy-k8s-results.json .
+          else
+            echo "No Kubernetes manifests found"
+          fi
+
+      - name: Upload IaC scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-iac-scan
+          path: trivy-*-results.json
+          retention-days: 30
+
+  secret-scan:
+    name: Secret Detection Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Trivy secret detection
+        uses: aquasecurity/trivy-action@0.16.1
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-secret-results.json'
+          scan-secret: true
+          exit-code: '0'
+
+      - name: Analyze secret detection results
+        run: |
+          if [ -f "trivy-secret-results.json" ]; then
+            echo "## Secret Detection Results" > secret-scan-report.md
+            echo "" >> secret-scan-report.md
+            
+            # Extract secrets info
+            SECRETS_FOUND=$(cat trivy-secret-results.json | jq '.Results[] | select(.Secrets) | .Secrets | length' | grep -v '^0$' | wc -l || echo "0")
+            
+            if [ "$SECRETS_FOUND" -gt 0 ]; then
+              echo "⚠️ Potential secrets detected: $SECRETS_FOUND" >> secret-scan-report.md
+              echo "" >> secret-scan-report.md
+              echo "Please review the following files:" >> secret-scan-report.md
+              cat trivy-secret-results.json | jq -r '.Results[] | select(.Secrets) | .Target' >> secret-scan-report.md
+            else
+              echo "✅ No secrets detected" >> secret-scan-report.md
+            fi
+          else
+            echo "No secret scan results available"
+          fi
+
+      - name: Upload secret scan report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-secret-scan
+          path: secret-scan-report.md,trivy-secret-results.json
+          retention-days: 30
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan Python dependencies
+        run: |
+          if [ -f "requirements.txt" ] || [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
+            echo "Scanning Python dependencies..."
+            pip install safety
+            safety check --json --output safety-report.json || true
+          fi
+
+      - name: Scan Node.js dependencies
+        run: |
+          if [ -f "package.json" ]; then
+            echo "Scanning Node.js dependencies..."
+            npm install -g audit-ci
+            audit-ci --moderate || true
+          fi
+
+      - name: Scan Go dependencies
+        run: |
+          if [ -f "go.mod" ]; then
+            echo "Scanning Go dependencies..."
+            go list -json -deps ./... | nancy sleuth || true
+          fi
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: trivy-dependency-scan
+          path: safety-report.json,audit-report.json
+          retention-days: 30
+
+  comprehensive-report:
+    name: Generate Comprehensive Security Report
+    runs-on: ubuntu-latest
+    needs: [filesystem-scan, repository-scan, config-scan, secret-scan, dependency-scan]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive security report
+        run: |
+          cat > comprehensive-security-report.md << EOF
+          # Comprehensive Security Report
+          
+          ## Executive Summary
+          - Generated: $(date)
+          - Commit: ${{ github.sha }}
+          - Branch: ${{ github.ref }}
+          - Repository: ${{ github.repository }}
+          
+          ## Scan Results Summary
+          
+          ### Filesystem Scan
+          - Status: ${{ needs.filesystem-scan.result }}
+          - Critical/High vulnerabilities found: TBD
+          
+          ### Repository Scan
+          - Status: ${{ needs.repository-scan.result }}
+          - Security issues detected: TBD
+          
+          ### Configuration Scan
+          - Status: ${{ needs.config-scan.result }}
+          - Config vulnerabilities: TBD
+          
+          ### Secret Detection
+          - Status: ${{ needs.secret-scan.result }}
+          - Secrets detected: TBD
+          
+          ### Dependency Scan
+          - Status: ${{ needs.dependency-scan.result }}
+          - Vulnerable dependencies: TBD
+          
+          ## Risk Assessment
+          
+          ### High Risk Issues
+          - Critical vulnerabilities requiring immediate attention
+          - Exposed secrets or credentials
+          - Insecure configurations
+          
+          ### Medium Risk Issues
+          - Outdated dependencies with known vulnerabilities
+          - Configuration best practice violations
+          - Information disclosure risks
+          
+          ### Low Risk Issues
+          - Minor security best practice violations
+          - Outdated tools or libraries
+          
+          ## Recommendations
+          
+          ### Immediate Actions Required
+          1. Fix all critical and high severity vulnerabilities
+          2. Remove any exposed secrets or credentials
+          3. Update insecure configurations
+          
+          ### Short-term Actions (1-2 weeks)
+          1. Update all vulnerable dependencies
+          2. Implement security best practices in configurations
+          3. Add security scanning to CI/CD pipeline
+          
+          ### Long-term Actions (1-3 months)
+          1. Implement security training for developers
+          2. Establish security review process
+          3. Implement automated security testing
+          
+          ## Compliance Notes
+          - OWASP Top 10 compliance status
+          - CIS benchmarks compliance
+          - Industry-specific compliance requirements
+          
+          ---
+          *Report generated by Trivy Security Scanner*
+          EOF
+
+      - name: Upload comprehensive security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-security-report
+          path: comprehensive-security-report.md
+          retention-days: 90
+
+  create-security-issue:
+    name: Create Security Issue for Critical Findings
+    runs-on: ubuntu-latest
+    needs: [filesystem-scan, repository-scan, config-scan, secret-scan]
+    if: failure() && (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create security issue
+        run: |
+          gh issue create \
+            --title "🚨 Critical Security Vulnerabilities Detected" \
+            --body "## Critical Security Issues Found
+          
+          The automated security scan detected critical vulnerabilities that require immediate attention.
+          
+          **Details:**
+          - Repository: ${{ github.repository }}
+          - Commit: ${{ github.sha }}
+          - Scan Date: $(date)
+          - Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          **Affected Components:**
+          - Filesystem scan: ${{ needs.filesystem-scan.result }}
+          - Repository scan: ${{ needs.repository-scan.result }}
+          - Configuration scan: ${{ needs.config-scan.result }}
+          - Secret detection: ${{ needs.secret-scan.result }}
+          
+          **Action Required:**
+          1. Review the security scan artifacts
+          2. Identify and fix all critical vulnerabilities
+          3. Remove any exposed secrets
+          4. Update insecure configurations
+          5. Test fixes thoroughly
+          
+          **Priority:** Critical - Immediate action required
+          
+          **Assign to:** Security team or repository maintainers
+          
+          **Labels:** security, critical, vulnerability" \
+            --label "security" \
+            --label "critical" \
+            --label "vulnerability"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
