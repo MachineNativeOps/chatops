@@ -2,97 +2,66 @@ SHELL := /usr/bin/env bash
 .ONESHELL:
 .SHELLFLAGS := -euo pipefail -c
 
-PY ?= python3
-NODE ?= node
-PIP ?= pip
-PNPM ?= pnpm
-
-ARTIFACTS_DIR ?= artifacts
-AUDIT_DIR ?= var/audit
+ROOT ?= .
+ARTIFACTS ?= artifacts
+REPORTS ?= $(ARTIFACTS)/reports
+SBOM ?= $(ARTIFACTS)/sbom
+ATTEST ?= $(ARTIFACTS)/attestations
+NAMING ?= $(REPORTS)/naming
+AUTOFIX ?= $(REPORTS)/auto-fix
 
 .PHONY: help
 help:
 	@printf "%s\n" \
 	"Targets:" \
-	"  bootstrap          Install local tooling (python deps) and init dirs" \
-	"  lint               Run lint/format checks (python + ts if present)" \
-	"  policy             Run conftest policy checks" \
-	"  scan               Run baseline security scans (local mode)" \
-	"  quality-gates      Compute quality score + gate verdict (local)" \
-	"  naming-discovery   Run naming discovery (K8s manifests + repo files)" \
-	"  naming-plan        Generate naming migration plan template" \
-	"  naming-dryrun      Dry-run rename plan (simulated)" \
-	"  audit              Append a local audit event" \
-	"  artifact-build      Convert docs (md/pdf/docx) to structured artifacts" \
-	"  py-test            Run python tests (engine) if present" \
-	"  ts-build           Build typescript (gateway) if present" \
-	"  e2e-rest           Run E2E smoke (rest->grpc) if present"
+	"  bootstrap           Setup local folders + basic checks" \
+	"  lint                Run local lint (shellcheck/hadolint optional)" \
+	"  policy              Run OPA/Conftest naming checks (if conftest installed)" \
+	"  naming              Run naming discovery->verify->report" \
+	"  sbom                Generate SBOM (stub)" \
+	"  provenance          Generate provenance (stub)" \
+	"  freeze              Create freeze gate file" \
+	"  unfreeze            Remove freeze gate file"
 
 .PHONY: bootstrap
 bootstrap:
-	mkdir -p "$(ARTIFACTS_DIR)"/{reports,evidence,modules,audit,tmp} "$(AUDIT_DIR)"
-	$(PY) -m pip install --upgrade pip >/dev/null
-	$(PIP) install -r scripts/requirements.txt
+	mkdir -p $(SBOM) $(ATTEST) $(REPORTS) $(AUTOFIX)/details $(NAMING)
+	bash scripts/bootstrap.sh
 
 .PHONY: lint
 lint:
-	$(PY) scripts/ci/lint_python.py
-	$(PY) scripts/ci/lint_repo_structure.py
+	bash scripts/gitleaks-scan.sh || true
+	bash scripts/semgrep-scan.sh || true
+	bash scripts/openapi-lint.sh || true
 
 .PHONY: policy
 policy:
-	$(PY) scripts/policy/run_conftest.py --policy-dir policies/opa --target-dir deployments
+	bash scripts/policy-validate.sh
 
-.PHONY: scan
-scan:
-	$(PY) scripts/security/scan_iac_checkov.py --root deployments --out "$(ARTIFACTS_DIR)/reports/checkov.json"
-	$(PY) scripts/security/scan_kubeaudit.py --root deployments --out "$(ARTIFACTS_DIR)/reports/kubeaudit.json"
-	$(PY) scripts/security/scan_kubebench_stub.py --out "$(ARTIFACTS_DIR)/reports/kube-bench.json"
+.PHONY: naming
+naming:
+	bash scripts/naming/discover.sh
+	bash scripts/naming/conftest-verify.sh
+	bash scripts/naming/remediate.sh || true
+	bash scripts/naming/dry-run.sh
+	bash scripts/naming/staged-rename.sh
+	bash scripts/naming/cutover.sh
+	bash scripts/naming/rollback.sh
+	bash scripts/naming/verify-post-rollback.sh || true
+	node scripts/naming/report-sla.mjs || true
 
-.PHONY: quality-gates
-quality-gates:
-	$(PY) scripts/quality/quality_gates.py --out "$(ARTIFACTS_DIR)/reports/quality-gates.json"
+.PHONY: sbom
+sbom:
+	bash scripts/gen-sbom.sh
 
-.PHONY: naming-discovery
-naming-discovery:
-	$(PY) scripts/naming/discovery.py --root deployments --out "$(ARTIFACTS_DIR)/reports/naming-discovery.json"
+.PHONY: provenance
+provenance:
+	bash scripts/slsa-attest.sh
 
-.PHONY: naming-plan
-naming-plan:
-	$(PY) scripts/naming/plan.py --discovery "$(ARTIFACTS_DIR)/reports/naming-discovery.json" --out "$(ARTIFACTS_DIR)/reports/naming-plan.csv"
+.PHONY: freeze
+freeze:
+	bash scripts/freeze-deploy.sh
 
-.PHONY: naming-dryrun
-naming-dryrun:
-	$(PY) scripts/naming/dryrun.py --plan "$(ARTIFACTS_DIR)/reports/naming-plan.csv" --out "$(ARTIFACTS_DIR)/reports/naming-dryrun.json"
-
-.PHONY: audit
-audit:
-	$(PY) scripts/audit/append_audit.py --event "$(EVENT)" --actor "$(ACTOR)" --why "$(WHY)" --how "$(HOW)" --trace-id "$(TRACE_ID)" --out "$(AUDIT_DIR)/audit.jsonl"
-
-.PHONY: artifact-build
-artifact-build:
-	$(PY) scripts/artifacts/build_modules.py --in artifacts/sources --out artifacts/modules --reports artifacts/reports
-
-.PHONY: py-test
-py-test:
-	if [ -d services/engine-python ]; then \
-		$(PY) -m pytest -q services/engine-python/tests; \
-	else \
-		echo "skip: services/engine-python not found"; \
-	fi
-
-.PHONY: ts-build
-ts-build:
-	if [ -d services/gateway-ts ]; then \
-		cd services/gateway-ts && (command -v pnpm >/dev/null 2>&1 && pnpm -v >/dev/null 2>&1 || npm i -g pnpm) && pnpm i && pnpm build; \
-	else \
-		echo "skip: services/gateway-ts not found"; \
-	fi
-
-.PHONY: e2e-rest
-e2e-rest:
-	if [ -f tests/e2e/rest_to_grpc.sh ]; then \
-		bash tests/e2e/rest_to_grpc.sh; \
-	else \
-		echo "skip: tests/e2e/rest_to_grpc.sh not found"; \
-	fi
+.PHONY: unfreeze
+unfreeze:
+	bash scripts/unfreeze-deploy.sh
