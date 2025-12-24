@@ -46,16 +46,31 @@ jobs:
         run: |
           case "${{ github.event.inputs.environment }}" in
             "production")
-              echo "target=prod" >> $GITHUB_OUTPUT
-              echo "DB_URL=${{ secrets.PROD_DB_URL }}" >> $GITHUB_ENV
+              DB_URL="${{ secrets.PROD_DB_URL }}"
+              if [ -z "$DB_URL" ]; then
+                echo "Error: PROD_DB_URL secret is not set or is empty." >&2
+                exit 1
+              fi
+              echo "target=prod" >> "$GITHUB_OUTPUT"
+              echo "DB_URL=$DB_URL" >> "$GITHUB_ENV"
               ;;
             "staging")
-              echo "target=stage" >> $GITHUB_OUTPUT
-              echo "DB_URL=${{ secrets.STAGE_DB_URL }}" >> $GITHUB_ENV
+              DB_URL="${{ secrets.STAGE_DB_URL }}"
+              if [ -z "$DB_URL" ]; then
+                echo "Error: STAGE_DB_URL secret is not set or is empty." >&2
+                exit 1
+              fi
+              echo "target=stage" >> "$GITHUB_OUTPUT"
+              echo "DB_URL=$DB_URL" >> "$GITHUB_ENV"
               ;;
             *)
-              echo "target=dev" >> $GITHUB_OUTPUT
-              echo "DB_URL=${{ secrets.DEV_DB_URL }}" >> $GITHUB_ENV
+              DB_URL="${{ secrets.DEV_DB_URL }}"
+              if [ -z "$DB_URL" ]; then
+                echo "Error: DEV_DB_URL secret is not set or is empty." >&2
+                exit 1
+              fi
+              echo "target=dev" >> "$GITHUB_OUTPUT"
+              echo "DB_URL=$DB_URL" >> "$GITHUB_ENV"
               ;;
           esac
 
