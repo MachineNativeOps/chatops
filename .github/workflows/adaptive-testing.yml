@@ -57,7 +57,7 @@ jobs:
         id: analysis
         run: |
           # Get changed files
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request"]; then
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} || echo "")
           else
             CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")

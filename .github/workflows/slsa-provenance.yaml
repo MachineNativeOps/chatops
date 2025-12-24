@@ -2,11 +2,11 @@ name: SLSA Level 3 Provenance Generation
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   release:
-    types: [ published ]
+    types: [ published]
   workflow_dispatch:
 
 permissions:
@@ -55,7 +55,7 @@ jobs:
 
       - name: Extract hash from provenance
         run: |
-          if [ -f "provenance.json" ]; then
+          if [ -f "provenance.json"]; then
             HASH=$(jq -r '.subject[0].digest.sha256' provenance.json)
             echo "hash=$HASH" >> $GITHUB_OUTPUT
             echo "Generated hash: $HASH"
@@ -77,7 +77,7 @@ jobs:
           echo "" >> provenance-verification.md
           echo "### Provenance Structure" >> provenance-verification.md
           
-          if [ -f "provenance.json" ]; then
+          if [ -f "provenance.json"]; then
             echo "- ✅ Provenance file generated successfully" >> provenance-verification.md
             
             # Check required fields
@@ -163,7 +163,7 @@ jobs:
           echo "" >> slsa-verification-report.md
           
           # Verify provenance file exists and is valid JSON
-          if [ -f "provenance.json" ]; then
+          if [ -f "provenance.json"]; then
             echo "### File Validation" >> slsa-verification-report.md
             echo "- ✅ Provenance file exists" >> slsa-verification-report.md
             
@@ -179,7 +179,7 @@ jobs:
             
             # Check for SLSA predicate type
             PREDICATE_TYPE=$(jq -r '.predicateType' provenance.json)
-            if [ "$PREDICATE_TYPE" = "https://slsa.dev/provenance/v0.2" ]; then
+            if [ "$PREDICATE_TYPE" = "https://slsa.dev/provenance/v0.2"]; then
               echo "- ✅ Correct SLSA predicate type" >> slsa-verification-report.md
             else
               echo "- ⚠️ Unexpected predicate type: $PREDICATE_TYPE" >> slsa-verification-report.md

@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # scripts/quality/intelligent_review.py
-# Phase-3: Intelligent Code Review System for Multi-Agent AI Production Environment
+# Phase-3: Intelligent Code Review System
+# for Multi-Agent AI Production Environment
 """
 Intelligent Code Reviewer for chatops multi-agent AI infrastructure.
-Scans: services/engine-python/, services/gateway-ts/, scripts/, tests/
-Excludes: artifacts/, var/, deployments/, policies/, .git/, node_modules/, __pycache__/, .venv/
+Scans: services/engine-python/, services/gateway-ts/,
+       scripts/, tests/
+Excludes: artifacts/, var/, deployments/, policies/,
+          .git/, node_modules/, __pycache__/, .venv/
 """
 import ast
 import re
@@ -22,7 +25,8 @@ class CodeIssue:
     line: int
     column: int
     severity: str  # 'error', 'warning', 'info'
-    category: str  # 'security', 'performance', 'maintainability', 'style', 'system'
+    category: str  # 'security', 'performance',
+    # 'maintainability', 'style', 'system'
     message: str
     suggestion: Optional[str] = None
     auto_fixable: bool = False

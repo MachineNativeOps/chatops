@@ -90,12 +90,12 @@ jobs:
           TS_SCORE="100"
 
           # Python analysis (engine-python)
-          if [ -d "services/engine-python" ] && [ -n "$(find services/engine-python -name '*.py' 2>/dev/null)" ]; then
+          if [ -d "services/engine-python"] && [ -n "$(find services/engine-python -name '*.py' 2>/dev/null)"]; then
             echo "Analyzing Python code..."
             PYLINT_SCORE=$(pylint services/engine-python --output-format=text 2>/dev/null | grep "rated at" | grep -o "[0-9.]*" | head -1 || echo "0")
 
             # Test coverage (if pytest available and tests exist)
-            if [ -d "services/engine-python/tests" ]; then
+            if [ -d "services/engine-python/tests"]; then
               TEST_COVERAGE=$(pytest -q --cov=services/engine-python --cov-report=term-missing 2>/dev/null | grep "TOTAL" | awk '{print $4}' | sed 's/%//' || echo "0")
             fi
 
@@ -104,7 +104,7 @@ jobs:
           fi
 
           # TypeScript analysis (gateway-ts)
-          if [ -d "services/gateway-ts" ] && [ -n "$(find services/gateway-ts -name '*.ts' 2>/dev/null)" ]; then
+          if [ -d "services/gateway-ts"] && [ -n "$(find services/gateway-ts -name '*.ts' 2>/dev/null)"]; then
             echo "Analyzing TypeScript code..."
             if command -v eslint &> /dev/null; then
               eslint services/gateway-ts --ext .ts,.tsx 2>/dev/null || TS_SCORE="60"
@@ -113,7 +113,7 @@ jobs:
 
           # Read intelligent review score if available
           INTELLIGENT_SCORE="100"
-          if [ -f "artifacts/intelligent-review.report.json" ]; then
+          if [ -f "artifacts/intelligent-review.report.json"]; then
             INTELLIGENT_SCORE=$(python3 -c "import json; d=json.load(open('artifacts/intelligent-review.report.json')); print(d.get('summary',{}).get('quality_score',100))" || echo "100")
           fi
 
@@ -142,12 +142,14 @@ jobs:
           print(f'{score:.1f}')
           " "$PYLINT_SCORE" "$TEST_COVERAGE" "$SECURITY_ISSUES" "$TS_SCORE" "$INTELLIGENT_SCORE")
 
-          echo "score=${QUALITY_SCORE}" >> $GITHUB_OUTPUT
-          echo "pylint-score=${PYLINT_SCORE}" >> $GITHUB_OUTPUT
-          echo "coverage=${TEST_COVERAGE}" >> $GITHUB_OUTPUT
-          echo "security-issues=${SECURITY_ISSUES}" >> $GITHUB_OUTPUT
-          echo "ts-score=${TS_SCORE}" >> $GITHUB_OUTPUT
-          echo "intelligent-score=${INTELLIGENT_SCORE}" >> $GITHUB_OUTPUT
+          {
+            echo "score=${QUALITY_SCORE}"
+            echo "pylint-score=${PYLINT_SCORE}"
+            echo "coverage=${TEST_COVERAGE}"
+            echo "security-issues=${SECURITY_ISSUES}"
+            echo "ts-score=${TS_SCORE}"
+            echo "intelligent-score=${INTELLIGENT_SCORE}"
+          } >> "$GITHUB_OUTPUT"
 
           echo "::notice title=Quality Score::$QUALITY_SCORE/100"
 
@@ -198,13 +200,13 @@ jobs:
           SECURITY_ISSUES="${{ steps.assessment.outputs.security-issues }}"
 
           # Policy Agent decision logic
-          if [ "$SECURITY_ISSUES" != "0" ] && [ "$SECURITY_ISSUES" != "" ]; then
+          if [ "$SECURITY_ISSUES" != "0"] && [ "$SECURITY_ISSUES" != ""]; then
             echo "verdict=block" >> $GITHUB_OUTPUT
             echo "reason=security-issues-detected" >> $GITHUB_OUTPUT
-          elif [ "$GATE_STATUS" = "pass" ]; then
+          elif [ "$GATE_STATUS" = "pass"]; then
             echo "verdict=pass" >> $GITHUB_OUTPUT
             echo "reason=quality-threshold-met" >> $GITHUB_OUTPUT
-          elif [ "$GATE_STATUS" = "need-approval" ]; then
+          elif [ "$GATE_STATUS" = "need-approval"]; then
             echo "verdict=need-approval" >> $GITHUB_OUTPUT
             echo "reason=below-threshold-requires-review" >> $GITHUB_OUTPUT
           else

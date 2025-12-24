@@ -2,7 +2,7 @@ name: Auto-Fix Bot
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
     types: [opened, synchronize]
   schedule:
@@ -72,7 +72,7 @@ jobs:
 
       - name: Auto-fix README links
         run: |
-          if [ -f "README.md" ]; then
+          if [ -f "README.md"]; then
             # Fix relative links in README
             sed -i 's|](./|](|g' README.md
             sed -i 's|](../|](|g' README.md
@@ -80,7 +80,7 @@ jobs:
 
       - name: Auto-fix version consistency
         run: |
-          if [ -f "VERSION" ]; then
+          if [ -f "VERSION"]; then
             VERSION=$(cat VERSION | tr -d '\n')
             echo "Found version: $VERSION"
             
@@ -122,7 +122,7 @@ jobs:
           
           # Create .gitkeep if directories are empty
           for dir in docs scripts tests; do
-            if [ ! -f "$dir/.gitkeep" ] && [ -z "$(ls -A $dir)" ]; then
+            if [ ! -f "$dir/.gitkeep"] && [ -z "$(ls -A $dir)"]; then
               touch "$dir/.gitkeep"
             fi
           done
@@ -147,7 +147,7 @@ jobs:
           - Ensured proper repository structure"
             
             # Push changes if on main/develop branch
-            if [[ "${{ github.ref }}" == "refs/heads/main" ]] || [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            if [[ "${{ github.ref }}" == "refs/heads/main"]] || [[ "${{ github.ref }}" == "refs/heads/develop"]]; then
               git push
             else
               # Create pull request for other branches
@@ -224,10 +224,10 @@ jobs:
           
           # Recommendations
           echo "## Recommendations" >> health-check.md
-          if [ "$LARGE_FILES" -gt 0 ]; then
+          if [ "$LARGE_FILES" -gt 0]; then
             echo "- Consider using Git LFS for large files" >> health-check.md
           fi
-          if [ "$EMPTY_DIRS" -gt 5 ]; then
+          if [ "$EMPTY_DIRS" -gt 5]; then
             echo "- Clean up empty directories or add .gitkeep files" >> health-check.md
           fi
 

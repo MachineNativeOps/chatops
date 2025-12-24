@@ -2,9 +2,9 @@ name: Comprehensive Security Scan with Trivy
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     - cron: '0 2 * * *'  # Daily at 2 AM UTC
   workflow_dispatch:
@@ -47,10 +47,11 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy filesystem scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: 'trivy-fs-results.sarif'
+          continue-on-error: true
           category: trivy-filesystem
 
       - name: Upload Trivy filesystem scan results
@@ -83,11 +84,12 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
 
       - name: Upload Trivy repository scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-repo-results.sarif') != ''
         with:
           sarif_file: 'trivy-repo-results.sarif'
           category: trivy-repository
+          continue-on-error: true
 
       - name: Upload Trivy repository scan results
         uses: actions/upload-artifact@v4
@@ -111,11 +113,12 @@ jobs:
           trivy config --format sarif --output trivy-config-results.sarif . || true
 
       - name: Upload Trivy config scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && hashFiles('trivy-config-results.sarif') != ''
         with:
           sarif_file: 'trivy-config-results.sarif'
           category: trivy-config
+          continue-on-error: true
 
       - name: Upload Trivy config scan results
         uses: actions/upload-artifact@v4
@@ -179,14 +182,14 @@ jobs:
 
       - name: Analyze secret detection results
         run: |
-          if [ -f "trivy-secret-results.json" ]; then
+          if [ -f "trivy-secret-results.json"]; then
             echo "## Secret Detection Results" > secret-scan-report.md
             echo "" >> secret-scan-report.md
             
             # Extract secrets info
             SECRETS_FOUND=$(cat trivy-secret-results.json | jq '.Results[] | select(.Secrets) | .Secrets | length' | grep -v '^0$' | wc -l || echo "0")
             
-            if [ "$SECRETS_FOUND" -gt 0 ]; then
+            if [ "$SECRETS_FOUND" -gt 0]; then
               echo "⚠️ Potential secrets detected: $SECRETS_FOUND" >> secret-scan-report.md
               echo "" >> secret-scan-report.md
               echo "Please review the following files:" >> secret-scan-report.md
@@ -215,7 +218,7 @@ jobs:
 
       - name: Scan Python dependencies
         run: |
-          if [ -f "requirements.txt" ] || [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
+          if [ -f "requirements.txt"] || [ -f "setup.py"] || [ -f "pyproject.toml"]; then
             echo "Scanning Python dependencies..."
             pip install safety
             safety check --json --output safety-report.json || true
@@ -223,7 +226,7 @@ jobs:
 
       - name: Scan Node.js dependencies
         run: |
-          if [ -f "package.json" ]; then
+          if [ -f "package.json"]; then
             echo "Scanning Node.js dependencies..."
             npm install -g audit-ci
             audit-ci --moderate || true
@@ -231,7 +234,7 @@ jobs:
 
       - name: Scan Go dependencies
         run: |
-          if [ -f "go.mod" ]; then
+          if [ -f "go.mod"]; then
             echo "Scanning Go dependencies..."
             go list -json -deps ./... | nancy sleuth || true
           fi

@@ -47,7 +47,7 @@ jobs:
           case "${{ github.event.inputs.environment }}" in
             "production")
               DB_URL="${{ secrets.PROD_DB_URL }}"
-              if [ -z "$DB_URL" ]; then
+              if [ -z "$DB_URL"]; then
                 echo "Error: PROD_DB_URL secret is not set or is empty." >&2
                 exit 1
               fi
@@ -56,7 +56,7 @@ jobs:
               ;;
             "staging")
               DB_URL="${{ secrets.STAGE_DB_URL }}"
-              if [ -z "$DB_URL" ]; then
+              if [ -z "$DB_URL"]; then
                 echo "Error: STAGE_DB_URL secret is not set or is empty." >&2
                 exit 1
               fi
@@ -65,7 +65,7 @@ jobs:
               ;;
             *)
               DB_URL="${{ secrets.DEV_DB_URL }}"
-              if [ -z "$DB_URL" ]; then
+              if [ -z "$DB_URL"]; then
                 echo "Error: DEV_DB_URL secret is not set or is empty." >&2
                 exit 1
               fi

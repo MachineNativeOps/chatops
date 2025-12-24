@@ -10,7 +10,6 @@ from pathlib import Path
 
 def run_test_vectors():
     """Run test vectors for validation"""
-    errors = []
     passed = 0
     failed = 0
     
@@ -29,14 +28,15 @@ def run_test_vectors():
         for test_file in test_path.glob("*.yaml"):
             try:
                 with open(test_file, 'r') as f:
-                    data = yaml.safe_load(f)
+                    _ = yaml.safe_load(f)
                 
                 # Basic YAML validation
                 if is_valid:
                     print(f"    ✅ Valid test passed: {test_file}")
                     passed += 1
                 else:
-                    print(f"    ❌ Invalid test should have failed: {test_file}")
+                    msg = f"Invalid test should have failed: {test_file}"
+                    print(f"    ❌ {msg}")
                     failed += 1
                     
             except Exception as e:
