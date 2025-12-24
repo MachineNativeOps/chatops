@@ -386,7 +386,7 @@ jobs:
     if: always()
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Create document bundle
         run: |
@@ -447,14 +447,14 @@ jobs:
           zip -r document-artifacts-${{ github.sha }}.zip bundle/
 
       - name: Upload document artifacts bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-artifacts-bundle
           path: bundle/
           retention-days: 30
 
       - name: Upload archives
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-archives
           path: document-artifacts-${{ github.sha }}.*
@@ -466,7 +466,7 @@ jobs:
     needs: [create-document-artifacts]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: document-artifacts-bundle
           path: ./
@@ -535,7 +535,7 @@ jobs:
           echo "- Web interface is functional" >> quality-check-report.md
 
       - name: Upload quality check report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-quality-check
           path: quality-check-report.md

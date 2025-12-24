@@ -54,7 +54,7 @@ jobs:
           category: trivy-filesystem
 
       - name: Upload Trivy filesystem scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-filesystem-scan
@@ -90,7 +90,7 @@ jobs:
           category: trivy-repository
 
       - name: Upload Trivy repository scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-repository-scan
@@ -118,7 +118,7 @@ jobs:
           category: trivy-config
 
       - name: Upload Trivy config scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-config-scan
@@ -151,7 +151,7 @@ jobs:
           fi
 
       - name: Upload IaC scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-iac-scan
@@ -199,7 +199,7 @@ jobs:
           fi
 
       - name: Upload secret scan report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-secret-scan
@@ -237,7 +237,7 @@ jobs:
           fi
 
       - name: Upload dependency scan results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: trivy-dependency-scan
@@ -251,7 +251,7 @@ jobs:
     if: always()
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Generate comprehensive security report
         run: |
@@ -329,7 +329,7 @@ jobs:
           EOF
 
       - name: Upload comprehensive security report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: comprehensive-security-report
           path: comprehensive-security-report.md

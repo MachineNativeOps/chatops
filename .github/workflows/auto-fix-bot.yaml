@@ -233,7 +233,7 @@ jobs:
           fi
 
       - name: Upload health check report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: repository-health-check
           path: health-check.md
@@ -254,7 +254,7 @@ jobs:
           echo "" >> actions-update.md
           
           # Get latest versions of commonly used actions
-          ACTIONS=("actions/checkout" "actions/setup-python" "actions/upload-artifact" "aquasecurity/trivy-action")
+          ACTIONS=("actions/checkout" "actions/setup-python" "actions/upload-artifact@v4" "aquasecurity/trivy-action")
           
           for action in "${ACTIONS[@]}"; do
             echo "## $action" >> actions-update.md
@@ -264,7 +264,7 @@ jobs:
           done
 
       - name: Upload update check report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dependency-update-check
           path: actions-update.md

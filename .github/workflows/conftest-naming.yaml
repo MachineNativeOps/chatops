@@ -119,7 +119,7 @@ jobs:
 
       - name: Upload naming violation report
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: naming-violations
           path: naming-violations.md
@@ -264,7 +264,7 @@ jobs:
           echo "- Update all references when renaming files" >> naming-compliance-report.md
 
       - name: Upload compliance report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: naming-compliance-report
           path: naming-compliance-report.md

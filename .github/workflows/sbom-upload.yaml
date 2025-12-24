@@ -209,7 +209,7 @@ jobs:
           echo "Generated files: $FILES"
 
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-artifacts
           path: ${{ env.OUTPUT_DIR }}/
@@ -221,7 +221,7 @@ jobs:
     needs: generate-sbom
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -303,7 +303,7 @@ jobs:
           done
 
       - name: Upload validation report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-validation-report
           path: sbom-validation-report.md
@@ -316,7 +316,7 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -354,7 +354,7 @@ jobs:
     needs: [generate-sbom, validate-sbom]
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -396,7 +396,7 @@ jobs:
           echo "- Implement license compliance checking" >> sbom-security-analysis.md
 
       - name: Upload security analysis
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-security-analysis
           path: sbom-security-analysis.md
@@ -409,7 +409,7 @@ jobs:
     if: always()
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Generate comprehensive report
         run: |
@@ -487,7 +487,7 @@ jobs:
           echo "5. SBOM sharing with stakeholders" >> sbom-comprehensive-report.md
 
       - name: Upload comprehensive report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-comprehensive-report
           path: sbom-comprehensive-report.md
