@@ -2,9 +2,9 @@ name: Naming Convention Enforcement
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -23,7 +23,8 @@ jobs:
       - name: Setup Conftest
         uses: instrumenta/conftest-action@master
         with:
-          tests: .config/conftest/policies/
+          files: .
+            policy: .config/conftest/policies/
 
       - name: Validate file naming conventions
         run: |
@@ -54,7 +55,7 @@ jobs:
           
           # Find directories with invalid naming
           find . -type d -name "*[A-Z]*" -o -name "*_*" | while read dir; do
-            if [[ "$dir" != "./.git"* ]] && [[ "$dir" != "./.github"* ]]; then
+            if [[ "$dir" != "./.git"*]] && [[ "$dir" != "./.github"*]]; then
               echo "❌ Invalid directory name: $dir (should be kebab-case)"
               exit 1
             fi
@@ -66,7 +67,7 @@ jobs:
           
           find . -name "*.yaml" -o -name "*.yml" | while read file; do
             # Skip certain files
-            if [[ "$file" == *".github"* ]] || [[ "$file" == *"node_modules"* ]]; then
+            if [[ "$file" == *".github"*]] || [[ "$file" == *"node_modules"*]]; then
               continue
             fi
             
@@ -119,7 +120,7 @@ jobs:
 
       - name: Upload naming violation report
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: naming-violations
           path: naming-violations.md
@@ -174,7 +175,7 @@ jobs:
           # Rename common patterns that are safe to change
           find . -name "*_config.yaml" -not -path "./.git/*" | while read file; do
             new_name=$(echo "$file" | sed 's/_config/-config/g')
-            if [ "$file" != "$new_name" ]; then
+            if [ "$file" != "$new_name"]; then
               echo "Renaming: $file -> $new_name"
               git mv "$file" "$new_name"
             fi
@@ -237,7 +238,7 @@ jobs:
           # Analyze file naming
           find . -name "*.yaml" -o -name "*.yml" -o -name "*.md" -o -name "*.sh" | while read file; do
             basename_file=$(basename "$file")
-            if [[ "$basename_file" =~ [A-Z] ]] || [[ "$basename_file" =~ _ ]]; then
+            if [[ "$basename_file" =~ [A-Z]]] || [[ "$basename_file" =~ _]]; then
               echo "- ❌ $basename_file (violates kebab-case)" >> naming-compliance-report.md
             else
               echo "- ✅ $basename_file (compliant)" >> naming-compliance-report.md
@@ -250,7 +251,7 @@ jobs:
           # Analyze directory naming
           find . -type d -not -path "./.git/*" -not -path "./.github/*" | while read dir; do
             basename_dir=$(basename "$dir")
-            if [[ "$basename_dir" =~ [A-Z] ]] || [[ "$basename_dir" =~ _ ]]; then
+            if [[ "$basename_dir" =~ [A-Z]]] || [[ "$basename_dir" =~ _]]; then
               echo "- ❌ $basename_dir/ (violates kebab-case)" >> naming-compliance-report.md
             else
               echo "- ✅ $basename_dir/ (compliant)" >> naming-compliance-report.md
@@ -264,7 +265,7 @@ jobs:
           echo "- Update all references when renaming files" >> naming-compliance-report.md
 
       - name: Upload compliance report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: naming-compliance-report
           path: naming-compliance-report.md

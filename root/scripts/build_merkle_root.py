@@ -48,7 +48,7 @@ def generate_merkle_lock():
                 hash_map[rel_path] = file_hash
     
     # Build Merkle tree
-    file_hashes.sort()  # Sort for deterministic results
+    file_hashes.sort()  # Sort for deterministic results  # Sort for deterministic results
     merkle_root = build_merkle_tree(file_hashes)
     
     # Create lock file

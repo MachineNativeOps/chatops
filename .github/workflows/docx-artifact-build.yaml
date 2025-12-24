@@ -2,13 +2,13 @@ name: Document to Artifact Conversion
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
       - '**.md'
       - '**.docx'
       - '**.txt'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - '**.md'
       - '**.docx'
@@ -61,7 +61,7 @@ jobs:
 
       - name: Convert README to PDF
         run: |
-          if [ -f "README.md" ]; then
+          if [ -f "README.md"]; then
             echo "Converting README.md to PDF..."
             
             # Create enhanced README with header
@@ -110,7 +110,7 @@ jobs:
             dirname=$(dirname "$md_file")
             
             # Skip if it's the README (already processed)
-            if [ "$filename" != "README" ]; then
+            if [ "$filename" != "README"]; then
               echo "Processing: $md_file"
               
               # Create subdirectory structure in artifacts
@@ -226,7 +226,7 @@ jobs:
 
       - name: Convert README to HTML
         run: |
-          if [ -f "README.md" ]; then
+          if [ -f "README.md"]; then
             echo "Converting README.md to HTML..."
             
             # Convert using pandoc
@@ -386,7 +386,7 @@ jobs:
     if: always()
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Create document bundle
         run: |
@@ -447,14 +447,14 @@ jobs:
           zip -r document-artifacts-${{ github.sha }}.zip bundle/
 
       - name: Upload document artifacts bundle
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-artifacts-bundle
           path: bundle/
           retention-days: 30
 
       - name: Upload archives
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-archives
           path: document-artifacts-${{ github.sha }}.*
@@ -466,7 +466,7 @@ jobs:
     needs: [create-document-artifacts]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: document-artifacts-bundle
           path: ./
@@ -489,10 +489,10 @@ jobs:
             
             # Check file sizes
             for pdf in documents/pdf/*.pdf; do
-              if [ -f "$pdf" ]; then
+              if [ -f "$pdf"]; then
                 size=$(wc -c < "$pdf")
                 filename=$(basename "$pdf")
-                if [ $size -gt 100 ]; then
+                if [ $size -gt 100]; then
                   echo "- ✅ $filename ($(echo "scale=2; $size/1024" | bc) KB)" >> quality-check-report.md
                 else
                   echo "- ⚠️ $filename ($(echo "scale=2; $size/1024" | bc) KB) - Small file size" >> quality-check-report.md
@@ -513,7 +513,7 @@ jobs:
             
             # Check for valid HTML structure
             for html in documents/html/*.html; do
-              if [ -f "$html" ]; then
+              if [ -f "$html"]; then
                 filename=$(basename "$html")
                 if grep -q "<!DOCTYPE html>" "$html"; then
                   echo "- ✅ $filename (Valid DOCTYPE)" >> quality-check-report.md
@@ -535,7 +535,7 @@ jobs:
           echo "- Web interface is functional" >> quality-check-report.md
 
       - name: Upload quality check report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: document-quality-check
           path: quality-check-report.md

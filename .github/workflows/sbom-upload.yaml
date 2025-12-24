@@ -2,11 +2,11 @@ name: Software Bill of Materials (SBOM) Generation and Upload
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   release:
-    types: [ published ]
+    types: [ published]
   schedule:
     - cron: '0 3 * * *'  # Daily at 3 AM UTC
   workflow_dispatch:
@@ -88,31 +88,31 @@ jobs:
           echo "Analyzing specific package ecosystems..."
           
           # Python ecosystem
-          if [ -f "requirements.txt" ] || [ -f "setup.py" ] || [ -f "pyproject.toml" ]; then
+          if [ -f "requirements.txt"] || [ -f "setup.py"] || [ -f "pyproject.toml"]; then
             echo "Detected Python ecosystem"
             pip install pip-audit
             
-            if [ -f "requirements.txt" ]; then
+            if [ -f "requirements.txt"]; then
               pip-audit --requirement requirements.txt --format json --output ${{ env.OUTPUT_DIR }}/python-vulnerabilities.json || echo "Python vulnerability scan completed"
             fi
           fi
           
           # Node.js ecosystem
-          if [ -f "package.json" ]; then
+          if [ -f "package.json"]; then
             echo "Detected Node.js ecosystem"
             npm install -g @cyclonedx/bom
             
-            if [ -f "package-lock.json" ]; then
+            if [ -f "package-lock.json"]; then
               cyclonedx-bom -o ${{ env.OUTPUT_DIR }}/nodejs-cyclonedx.sbom.json package-lock.json || echo "Node.js CycloneDX generation completed"
             fi
           fi
           
           # Go ecosystem
-          if [ -f "go.mod" ]; then
+          if [ -f "go.mod"]; then
             echo "Detected Go ecosystem"
             go install github.com/CycloneDX/cyclonedx-gomod@latest
             
-            if [ -f "go.mod" ]; then
+            if [ -f "go.mod"]; then
               cyclonedx-gomod -json -output ${{ env.OUTPUT_DIR }}/go-cyclonedx.sbom.json || echo "Go CycloneDX generation completed"
             fi
           fi
@@ -148,7 +148,7 @@ jobs:
                 "files": ["python-vulnerabilities.json"],
                 "tool": ["pip-audit"]
               }
-            ]
+           ]
           }
           EOF
           
@@ -173,12 +173,12 @@ jobs:
           echo "## Package Statistics" >> ${{ env.OUTPUT_DIR }}/sbom-summary.md
           
           # Extract package counts from SPDX files
-          if [ -f "${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json" ]; then
+          if [ -f "${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json"]; then
             PKG_COUNT=$(jq '.packages | length' ${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json 2>/dev/null || echo "0")
             echo "- Trivy detected packages: $PKG_COUNT" >> ${{ env.OUTPUT_DIR }}/sbom-summary.md
           fi
           
-          if [ -f "${{ env.OUTPUT_DIR }}/syft-spdx.sbom.json" ]; then
+          if [ -f "${{ env.OUTPUT_DIR }}/syft-spdx.sbom.json"]; then
             PKG_COUNT=$(jq '.packages | length' ${{ env.OUTPUT_DIR }}/syft-spdx.sbom.json 2>/dev/null || echo "0")
             echo "- Syft detected packages: $PKG_COUNT" >> ${{ env.OUTPUT_DIR }}/sbom-summary.md
           fi
@@ -189,13 +189,13 @@ jobs:
           echo "Calculating file hashes..."
           
           # Calculate SHA256 hashes for main SBOM files
-          if [ -f "${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json" ]; then
+          if [ -f "${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json"]; then
             SPDX_HASH=$(sha256sum ${{ env.OUTPUT_DIR }}/trivy-spdx.sbom.json | cut -d' ' -f1)
             echo "spdx=$SPDX_HASH" >> $GITHUB_OUTPUT
             echo "SPDX Hash: $SPDX_HASH"
           fi
           
-          if [ -f "${{ env.OUTPUT_DIR }}/trivy-cyclonedx.sbom.json" ]; then
+          if [ -f "${{ env.OUTPUT_DIR }}/trivy-cyclonedx.sbom.json"]; then
             CYCLONEDX_HASH=$(sha256sum ${{ env.OUTPUT_DIR }}/trivy-cyclonedx.sbom.json | cut -d' ' -f1)
             echo "cyclonedx=$CYCLONEDX_HASH" >> $GITHUB_OUTPUT
             echo "CycloneDX Hash: $CYCLONEDX_HASH"
@@ -209,7 +209,7 @@ jobs:
           echo "Generated files: $FILES"
 
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-artifacts
           path: ${{ env.OUTPUT_DIR }}/
@@ -221,7 +221,7 @@ jobs:
     needs: generate-sbom
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -237,7 +237,7 @@ jobs:
           echo "" >> sbom-validation-report.md
           
           for sbom_file in trivy-spdx.sbom.json syft-spdx.sbom.json; do
-            if [ -f "$sbom_file" ]; then
+            if [ -f "$sbom_file"]; then
               echo "### Validating $sbom_file" >> sbom-validation-report.md
               
               # Check JSON validity
@@ -249,7 +249,7 @@ jobs:
               
               # Check SPDX structure
               SPDX_VERSION=$(jq -r '.spdxVersion' "$sbom_file" 2>/dev/null)
-              if [ "$SPDX_VERSION" = "SPDX-2.3" ] || [ "$SPDX_VERSION" = "SPDX-2.2" ]; then
+              if [ "$SPDX_VERSION" = "SPDX-2.3"] || [ "$SPDX_VERSION" = "SPDX-2.2"]; then
                 echo "- ✅ Valid SPDX version: $SPDX_VERSION" >> sbom-validation-report.md
               else
                 echo "- ❌ Invalid or missing SPDX version" >> sbom-validation-report.md
@@ -257,7 +257,7 @@ jobs:
               
               # Check for required fields
               DOCUMENT_NAME=$(jq -r '.name' "$sbom_file" 2>/dev/null)
-              if [ "$DOCUMENT_NAME" != "null" ] && [ "$DOCUMENT_NAME" != "" ]; then
+              if [ "$DOCUMENT_NAME" != "null"] && [ "$DOCUMENT_NAME" != ""]; then
                 echo "- ✅ Document name present: $DOCUMENT_NAME" >> sbom-validation-report.md
               else
                 echo "- ❌ Document name missing" >> sbom-validation-report.md
@@ -276,7 +276,7 @@ jobs:
           echo "### CycloneDX Validation" >> sbom-validation-report.md
           
           for sbom_file in trivy-cyclonedx.sbom.json syft-cyclonedx.sbom.json; do
-            if [ -f "$sbom_file" ]; then
+            if [ -f "$sbom_file"]; then
               echo "#### Validating $sbom_file" >> sbom-validation-report.md
               
               # Check JSON validity
@@ -288,7 +288,7 @@ jobs:
               
               # Check CycloneDX structure
               SPEC_VERSION=$(jq -r '.specVersion' "$sbom_file" 2>/dev/null)
-              if [ "$SPEC_VERSION" = "1.4" ] || [ "$SPEC_VERSION" = "1.5" ]; then
+              if [ "$SPEC_VERSION" = "1.4"] || [ "$SPEC_VERSION" = "1.5"]; then
                 echo "- ✅ Valid CycloneDX version: $SPEC_VERSION" >> sbom-validation-report.md
               else
                 echo "- ❌ Invalid or missing CycloneDX version" >> sbom-validation-report.md
@@ -303,7 +303,7 @@ jobs:
           done
 
       - name: Upload validation report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-validation-report
           path: sbom-validation-report.md
@@ -316,7 +316,7 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -328,7 +328,7 @@ jobs:
           # This is a placeholder for GitHub Dependency Graph API
           # In a real implementation, you would use the GitHub API to upload SBOM
           
-          if [ -f "trivy-spdx.sbom.json" ]; then
+          if [ -f "trivy-spdx.sbom.json"]; then
             echo "SBOM file ready for upload to GitHub Dependency Graph"
             echo "File: trivy-spdx.sbom.json"
             echo "Size: $(wc -c < trivy-spdx.sbom.json) bytes"
@@ -354,7 +354,7 @@ jobs:
     needs: [generate-sbom, validate-sbom]
     steps:
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: sbom-artifacts
           path: ./
@@ -367,12 +367,12 @@ jobs:
           echo "" >> sbom-security-analysis.md
           
           # Analyze vulnerability data if available
-          if [ -f "python-vulnerabilities.json" ]; then
+          if [ -f "python-vulnerabilities.json"]; then
             echo "#### Python Package Vulnerabilities" >> sbom-security-analysis.md
             VULN_COUNT=$(jq '.vulnerabilities | length' python-vulnerabilities.json 2>/dev/null || echo "0")
             echo "- Vulnerabilities found: $VULN_COUNT" >> sbom-security-analysis.md
             
-            if [ "$VULN_COUNT" -gt 0 ]; then
+            if [ "$VULN_COUNT" -gt 0]; then
               echo "" >> sbom-security-analysis.md
               echo "#### Critical Vulnerabilities:" >> sbom-security-analysis.md
               jq -r '.vulnerabilities[] | select(.severity == "high" or .severity == "critical") | "- \(.id): \(.name) (\(.severity))"' python-vulnerabilities.json 2>/dev/null | head -10 >> sbom-security-analysis.md
@@ -383,7 +383,7 @@ jobs:
           echo "" >> sbom-security-analysis.md
           echo "### License Analysis" >> sbom-security-analysis.md
           
-          if [ -f "trivy-spdx.sbom.json" ]; then
+          if [ -f "trivy-spdx.sbom.json"]; then
             echo "" >> sbom-security-analysis.md
             echo "#### License Distribution:" >> sbom-security-analysis.md
             jq -r '.packages[] | .licenseConcluded // "Unknown"' trivy-spdx.sbom.json 2>/dev/null | sort | uniq -c | sort -nr >> sbom-security-analysis.md
@@ -396,7 +396,7 @@ jobs:
           echo "- Implement license compliance checking" >> sbom-security-analysis.md
 
       - name: Upload security analysis
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-security-analysis
           path: sbom-security-analysis.md
@@ -409,7 +409,7 @@ jobs:
     if: always()
     steps:
       - name: Download all reports
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Generate comprehensive report
         run: |
@@ -487,7 +487,7 @@ jobs:
           echo "5. SBOM sharing with stakeholders" >> sbom-comprehensive-report.md
 
       - name: Upload comprehensive report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sbom-comprehensive-report
           path: sbom-comprehensive-report.md

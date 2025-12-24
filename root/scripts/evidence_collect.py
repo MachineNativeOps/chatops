@@ -6,7 +6,7 @@ evidence_collect.py - Generate evidence chain
 import os
 import hashlib
 import json
-import yaml
+# import yaml
 from pathlib import Path
 from datetime import datetime
 
