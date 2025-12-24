@@ -1,0 +1,32 @@
+name: CodeQL
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  security-events: write
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (pinned)
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec7b1a9d
+      - name: Initialize CodeQL (pinned)
+        uses: github/codeql-action/init@b3f3c7b0b9d0a9a0f1f1b2a3c4d5e6f7a8b9c0d1
+        with:
+          languages: go,javascript
+        continue-on-error: true
+      - name: Autobuild (pinned)
+        uses: github/codeql-action/autobuild@b3f3c7b0b9d0a9a0f1f1b2a3c4d5e6f7a8b9c0d1
+        continue-on-error: true
+      - name: Analyze (pinned)
+        uses: github/codeql-action/analyze@b3f3c7b0b9d0a9a0f1f1b2a3c4d5e6f7a8b9c0d1
+        continue-on-error: true

@@ -1,0 +1,24 @@
+name: Gitleaks
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (pinned)
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec7b1a9d
+      - name: Run gitleaks (stub)
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/gitleaks-scan.sh
