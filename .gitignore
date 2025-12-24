@@ -76,3 +76,39 @@ overrides/
 # Backup files
 *.bak
 *.backup
+
+# Multi-Agent AI CI/CD (Phase-1/2/3)
+# Test reports (generated but gitignored for local, uploaded as artifacts in CI)
+test-reports/*.log
+test-reports/*.json
+!test-reports/.gitkeep
+
+# Artifacts (generated, uploaded in CI)
+artifacts/*.json
+artifacts/audit/*.jsonl
+!artifacts/.gitkeep
+
+# Variable data (runtime)
+var/audit/*.jsonl
+!var/audit/.gitkeep
+
+# Proto generated code
+proto/generated/*.py
+proto/generated/*_pb2*.py
+!proto/generated/.gitkeep
+
+# TypeScript build output
+services/gateway-ts/dist/
+services/gateway-ts/node_modules/
+services/gateway-ts/.tsbuildinfo
+
+# Python virtual environments
+services/engine-python/.venv/
+services/engine-python/*.egg-info/
+services/engine-python/.eggs/
+
+# Coverage reports
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
