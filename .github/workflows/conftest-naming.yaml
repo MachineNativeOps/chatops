@@ -23,7 +23,8 @@ jobs:
       - name: Setup Conftest
         uses: instrumenta/conftest-action@master
         with:
-          tests: .config/conftest/policies/
+          files: .
+            policy: .config/conftest/policies/
 
       - name: Validate file naming conventions
         run: |
