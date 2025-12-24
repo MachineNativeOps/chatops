@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # services/engine-python/tests/test_processor.py
 """Tests for the Processor class."""
-import pytest
 import sys
 import os
 
