@@ -214,7 +214,7 @@ proto-gen: ## Generate protobuf code
 		protoc --proto_path=$(PROTO_DIR) \
 			--python_out=$(PROTO_DIR)/generated \
 			--grpc_python_out=$(PROTO_DIR)/generated \
-			$(PROTO_DIR)/engine.proto || true; \
+			$(PROTO_DIR)/engine.proto; \
 		echo "✅ Protobuf code generated"; \
 	else \
 		echo "⚠️  protoc not installed, skipping proto generation"; \
