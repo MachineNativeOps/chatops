@@ -134,9 +134,16 @@ test_error_handling() {
 
     # Test invalid endpoint
     local http_code
-    http_code=$(curl -sf -o /dev/null -w "%{http_code}" "${GATEWAY_URL}/api/v1/nonexistent" 2>/dev/null || echo "000")
+    http_code=$(curl -sf -o /dev/null -w "%{http_code}" "${GATEWAY_URL}/api/v1/nonexistent" 2>/dev/null || true)
+    local curl_status=$?
 
-    if [ "$http_code" = "404" ] || [ "$http_code" = "000" ]; then
+    if [ "$curl_status" -ne 0 ]; then
+        log_warn "Error handling test skipped (service not reachable or curl failed)"
+        ((TESTS_SKIPPED++))
+        return 0
+    fi
+
+    if [ "$http_code" = "404" ]; then
         log_info "Error handling works correctly (got $http_code)"
         ((TESTS_PASSED++))
         return 0
