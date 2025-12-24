@@ -380,7 +380,8 @@ class IntelligentCodeReviewer:
             # Extra weight for security issues
             if issue.category == 'security':
                 weight *= 2
-            base_score -= weight
+            # Cap deductions so the score never drops below 0 during calculation
+            base_score = max(0, base_score - weight)
 
         return max(0, base_score)
 
