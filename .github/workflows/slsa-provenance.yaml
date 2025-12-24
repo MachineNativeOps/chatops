@@ -47,7 +47,7 @@ jobs:
 
       - name: Generate SLSA provenance
         id: generate
-        uses: slsa-framework/slsa-github-generator@v1.9.0
+        uses: slsa-framework/slsa-github-generator@v1.10.0
         with:
           provenance-name: provenance.json
           base64-provenance-name: provenance.base64

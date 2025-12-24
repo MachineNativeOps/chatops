@@ -142,12 +142,12 @@ jobs:
           print(f'{score:.1f}')
           " "$PYLINT_SCORE" "$TEST_COVERAGE" "$SECURITY_ISSUES" "$TS_SCORE" "$INTELLIGENT_SCORE")
 
-          echo "score=$QUALITY_SCORE" >> $GITHUB_OUTPUT
-          echo "pylint-score=$PYLINT_SCORE" >> $GITHUB_OUTPUT
-          echo "coverage=$TEST_COVERAGE" >> $GITHUB_OUTPUT
-          echo "security-issues=$SECURITY_ISSUES" >> $GITHUB_OUTPUT
-          echo "ts-score=$TS_SCORE" >> $GITHUB_OUTPUT
-          echo "intelligent-score=$INTELLIGENT_SCORE" >> $GITHUB_OUTPUT
+          echo "score=${QUALITY_SCORE}" >> $GITHUB_OUTPUT
+          echo "pylint-score=${PYLINT_SCORE}" >> $GITHUB_OUTPUT
+          echo "coverage=${TEST_COVERAGE}" >> $GITHUB_OUTPUT
+          echo "security-issues=${SECURITY_ISSUES}" >> $GITHUB_OUTPUT
+          echo "ts-score=${TS_SCORE}" >> $GITHUB_OUTPUT
+          echo "intelligent-score=${INTELLIGENT_SCORE}" >> $GITHUB_OUTPUT
 
           echo "::notice title=Quality Score::$QUALITY_SCORE/100"
 
