@@ -81,11 +81,24 @@ class EngineServicer:
                 })()
 
         except Exception as e:
+            processing_time = int((time.time() - start_time) * 1000)
             logger.error(f'Processing failed: trace_id={trace_id}, error={str(e)}')
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
-            return None
 
+            if PROTO_AVAILABLE:
+                return engine_pb2.ProcessResponse(
+                    output='',
+                    metadata={},
+                    processing_time=processing_time
+                )
+            else:
+                # Return mock error response for development
+                return type('MockResponse', (), {
+                    'output': '',
+                    'metadata': {},
+                    'processing_time': processing_time
+                })()
     def HealthCheck(self, request, context):
         """Health check endpoint."""
         if PROTO_AVAILABLE:
