@@ -11,7 +11,6 @@ import time
 import json
 import logging
 from concurrent import futures
-from typing import Optional
 
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
