@@ -4,7 +4,6 @@ Engine Service Integration Tests
 
 import pytest
 import httpx
-from typing import Dict
 
 
 class TestEngineHealth:
