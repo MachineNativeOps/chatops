@@ -240,8 +240,7 @@ class TestErrorRecoveryWorkflow:
 
             if dlq_response.status_code == 200:
                 dlq_response.json().get("messages", [])
-                # Check if our message is in DLQ
-                # assert any(m["id"] == message_id for m in dlq_messages)
+                # Check if our message is in DLQ (assertion disabled for now)
 
 
 class TestWebhookWorkflow:
@@ -288,8 +287,7 @@ class TestWebhookWorkflow:
 
             if delivery_response.status_code == 200:
                 delivery_response.json().get("deliveries", [])
-                # Verify delivery attempted
-                # assert len(deliveries) > 0
+                # Verify delivery attempted (assertion disabled for now)
 
 
 class TestConcurrencyWorkflow:
