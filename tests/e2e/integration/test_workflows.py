@@ -241,7 +241,7 @@ class TestErrorRecoveryWorkflow:
             if dlq_response.status_code == 200:
                 dlq_messages = dlq_response.json().get("messages", [])
                 # Check if our message is in DLQ
-                # assert any(m["id"] == message_id for m in dlq_messages)
+                assert any(m["id"] == message_id for m in dlq_messages)
 
 
 class TestWebhookWorkflow:
