@@ -1,0 +1,685 @@
+openapi: 3.1.0
+info:
+  title: ChatOps Platform API
+  description: |
+    ChatOps Platform 提供完整的聊天運維功能，包括消息處理、工作流執行和通知服務。
+
+    ## 認證
+    API 使用 Bearer Token 認證。在請求頭中添加：
+    ```
+    Authorization: Bearer <your-token>
+    ```
+
+    ## 速率限制
+    - 標準用戶: 100 請求/分鐘
+    - 高級用戶: 1000 請求/分鐘
+
+    速率限制頭:
+    - `X-RateLimit-Limit`: 限制總數
+    - `X-RateLimit-Remaining`: 剩餘請求數
+    - `X-RateLimit-Reset`: 重置時間 (Unix timestamp)
+
+    ## 錯誤處理
+    所有錯誤返回統一格式:
+    ```json
+    {
+      "error": {
+        "code": "ERROR_CODE",
+        "message": "Human readable message",
+        "details": []
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: ChatOps Team
+    email: api@chatops.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.chatops.example.com
+    description: Production
+  - url: https://api-staging.chatops.example.com
+    description: Staging
+  - url: http://localhost:8080
+    description: Local Development
+
+tags:
+  - name: Health
+    description: 健康檢查端點
+  - name: Messages
+    description: 消息管理
+  - name: Workflows
+    description: 工作流管理
+  - name: Notifications
+    description: 通知服務
+  - name: Users
+    description: 用戶管理
+  - name: Webhooks
+    description: Webhook 管理
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: 健康檢查
+      description: 檢查服務健康狀態
+      operationId: healthCheck
+      responses:
+        '200':
+          description: 服務健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: 服務不健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /ready:
+    get:
+      tags: [Health]
+      summary: 就緒檢查
+      description: 檢查服務是否準備好接收流量
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: 服務就緒
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          description: 服務未就緒
+
+  /api/v1/messages:
+    get:
+      tags: [Messages]
+      summary: 列出消息
+      description: 獲取消息列表，支持分頁和過濾
+      operationId: listMessages
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: channel
+          in: query
+          description: 按頻道過濾
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 按狀態過濾
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+        - name: from
+          in: query
+          description: 開始時間
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: 結束時間
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+    post:
+      tags: [Messages]
+      summary: 創建消息
+      description: 創建新消息並提交處理
+      operationId: createMessage
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMessageRequest'
+      responses:
+        '201':
+          description: 消息已創建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '202':
+          description: 消息已接受，正在處理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /api/v1/messages/{messageId}:
+    get:
+      tags: [Messages]
+      summary: 獲取消息詳情
+      operationId: getMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Messages]
+      summary: 刪除消息
+      operationId: deleteMessage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageIdParam'
+      responses:
+        '204':
+          description: 消息已刪除
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/messages/{messageId}/status:
+    get:
+      tags: [Messages]
+      summary: 獲取消息處理狀態
+      operationId: getMessageStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MessageIdParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/workflows:
+    get:
+      tags: [Workflows]
+      summary: 列出工作流
+      operationId: listWorkflows
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowListResponse'
+
+    post:
+      tags: [Workflows]
+      summary: 創建工作流
+      operationId: createWorkflow
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkflowRequest'
+      responses:
+        '201':
+          description: 工作流已創建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+
+  /api/v1/workflows/{workflowId}/execute:
+    post:
+      tags: [Workflows]
+      summary: 執行工作流
+      operationId: executeWorkflow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: workflowId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteWorkflowRequest'
+      responses:
+        '202':
+          description: 工作流執行已啟動
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowExecution'
+
+  /api/v1/notifications:
+    post:
+      tags: [Notifications]
+      summary: 發送通知
+      operationId: sendNotification
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationRequest'
+      responses:
+        '202':
+          description: 通知已排隊
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
+  /api/v1/webhooks:
+    get:
+      tags: [Webhooks]
+      summary: 列出 Webhooks
+      operationId: listWebhooks
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookListResponse'
+
+    post:
+      tags: [Webhooks]
+      summary: 創建 Webhook
+      operationId: createWebhook
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWebhookRequest'
+      responses:
+        '201':
+          description: Webhook 已創建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: 頁碼
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: 每頁數量
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    MessageIdParam:
+      name: messageId
+      in: path
+      required: true
+      description: 消息 ID
+      schema:
+        type: string
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+        version:
+          type: string
+
+    ReadyResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ready, not_ready]
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+        channel:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+        channel:
+          type: string
+          default: default
+        metadata:
+          type: object
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+
+    MessageStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        result:
+          type: object
+        error:
+          type: string
+
+    MessageListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateWorkflowRequest:
+      type: object
+      required:
+        - name
+        - steps
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+
+    ExecuteWorkflowRequest:
+      type: object
+      properties:
+        input:
+          type: object
+        options:
+          type: object
+
+    WorkflowExecution:
+      type: object
+      properties:
+        executionId:
+          type: string
+        workflowId:
+          type: string
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        startedAt:
+          type: string
+          format: date-time
+
+    WorkflowListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Workflow'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        recipient:
+          type: string
+        channel:
+          type: string
+        status:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+
+    CreateNotificationRequest:
+      type: object
+      required:
+        - recipient
+        - title
+        - body
+      properties:
+        recipient:
+          type: string
+        channel:
+          type: string
+          enum: [email, sms, push, slack]
+        title:
+          type: string
+        body:
+          type: string
+        data:
+          type: object
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateWebhookRequest:
+      type: object
+      required:
+        - url
+        - events
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            type: string
+        secret:
+          type: string
+
+    WebhookListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Webhook'
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+
+  responses:
+    BadRequest:
+      description: 請求格式錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: 未認證
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: 資源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: 驗證錯誤
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    RateLimited:
+      description: 請求過於頻繁
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
