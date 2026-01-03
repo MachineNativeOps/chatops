@@ -23,7 +23,6 @@ asyncpg>=0.28.0
 
 # Redis
 redis>=4.6.0
-aioredis>=2.0.0
 
 # Data Validation
 pydantic>=2.0.0

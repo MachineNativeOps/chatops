@@ -5,7 +5,6 @@ These tests verify that Engine API fulfills the contracts defined by consumers.
 """
 
 import pytest
-import subprocess
 from pact import Verifier
 
 
