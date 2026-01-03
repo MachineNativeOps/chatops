@@ -4,7 +4,7 @@ Gateway API Integration Tests
 
 import pytest
 import httpx
-from typing import Dict, Any
+from typing import Dict
 
 
 class TestHealthEndpoints:

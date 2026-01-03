@@ -7,7 +7,7 @@ Tests complete user workflows across multiple services.
 import pytest
 import httpx
 import asyncio
-from typing import Dict, Any
+from typing import Dict
 
 
 class TestMessageWorkflow:
@@ -228,7 +228,7 @@ class TestErrorRecoveryWorkflow:
 
         # Should accept the message
         if response.status_code in [200, 201, 202]:
-            message_id = response.json().get("id")
+            response.json().get("id")
 
             # Wait and check if message ended up in DLQ
             await asyncio.sleep(5)
@@ -239,7 +239,7 @@ class TestErrorRecoveryWorkflow:
             )
 
             if dlq_response.status_code == 200:
-                dlq_messages = dlq_response.json().get("messages", [])
+                dlq_response.json().get("messages", [])
                 # Check if our message is in DLQ
                 # assert any(m["id"] == message_id for m in dlq_messages)
 
@@ -287,7 +287,7 @@ class TestWebhookWorkflow:
             )
 
             if delivery_response.status_code == 200:
-                deliveries = delivery_response.json().get("deliveries", [])
+                delivery_response.json().get("deliveries", [])
                 # Verify delivery attempted
                 # assert len(deliveries) > 0
 
@@ -338,7 +338,7 @@ class TestConcurrencyWorkflow:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Expect some 429 responses
-        rate_limited = sum(1 for r in results if r == 429)
+        sum(1 for r in results if r == 429)
         success = sum(1 for r in results if r == 200)
 
         # Should have a mix of success and rate-limited
